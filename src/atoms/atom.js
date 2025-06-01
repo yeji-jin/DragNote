@@ -13,10 +13,16 @@ const getNoteState = () => {
       b: [],
       c: [],
     },
+    // @
+    // noteState = [
+    //   { id: "a", items: [...] },
+    //   { id: "b", items: [...] },
+    //   { id: "c", items: [...] },
+    // ];
   };
   try {
     const savedNote = localStorage.getItem("noteState");
-    console.log(savedNote);
+    // console.log(savedNote);
     if (savedNote) {
       return JSON.parse(savedNote);
     }

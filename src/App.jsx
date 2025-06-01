@@ -5,6 +5,7 @@ import { NoteState } from "./atoms/atom";
 import Note from "./components/Note";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import useSaveToLocalStorage from "./hooks/useSaveToLocalStorage";
+import { useEffect } from "react";
 
 const DROPPABLE_ID = "note-list";
 const Wrapper = styled.div`
@@ -54,9 +55,12 @@ function App() {
     formState: { errors },
   } = useForm();
 
+  useEffect(() => {
+    saveNoteState(noteState);
+  }, [noteState, saveNoteState]);
+
   const createNote = (data) => {
     const newNote = data.NewNote.trim();
-    // 중복 체크
     if (noteState.data[newNote]) {
       setError("NewNote", {
         type: "duplicate",
@@ -73,7 +77,6 @@ function App() {
           [newNote]: [],
         },
       };
-      saveNoteState(newNoteState);
       return newNoteState;
     });
     setValue("NewNote", ""); //reset
@@ -104,7 +107,7 @@ function App() {
       {/* Note */}
       {noteState.order.length > 0 ? (
         <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId={DROPPABLE_ID} disableInteractiveElementBlocking={true}>
+          <Droppable droppableId={DROPPABLE_ID} direction="horizontal" disableInteractiveElementBlocking={true}>
             {(provided) => (
               <NotesWrapper ref={provided.innerRef} {...provided.droppableProps}>
                 {noteState.order.map((title, index) => (
