@@ -81,18 +81,42 @@ function App() {
     });
     setValue("NewNote", ""); //reset
   };
-
-  const onDragEnd = ({ source, destination }) => {
-    if (!destination || source.index === destination.index) return;
-    setNoteState((prev) => {
-      const newOrder = Array.from(prev.order);
-      const [moved] = newOrder.splice(source.index, 1);
-      newOrder.splice(destination.index, 0, moved);
-      return {
-        ...prev,
-        order: newOrder,
-      };
-    });
+  const onDragEnd = (info) => {
+    const { source, destination } = info;
+    //draggableId -> 처음 선택한것
+    //source.droppableId -> 드래그하던 note container
+    //source.index -> 옮기려고하는 위치
+    //destination.droppableId -> 옮기려고하는 위치
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId) {
+      //only same note
+      setNoteState((prev) => {
+        const newData = { ...prev.data };
+        const items = [...newData[source.droppableId]];
+        const [movedItem] = items.splice(source.index, 1);
+        items.splice(destination.index, 0, movedItem);
+        newData[source.droppableId] = items;
+        return {
+          ...prev,
+          data: newData,
+        };
+      });
+    } else {
+      //other note
+      setNoteState((prev) => {
+        const newData = { ...prev.data };
+        const copySourceItems = [...newData[source.droppableId]];
+        const copyDestinationItems = [...newData[destination.droppableId]];
+        const [movedItem] = copySourceItems.splice(source.index, 1);
+        copyDestinationItems.splice(destination.index, 0, movedItem);
+        newData[source.droppableId] = copySourceItems;
+        newData[destination.droppableId] = copyDestinationItems;
+        return {
+          ...prev,
+          data: newData,
+        };
+      });
+    }
   };
 
   return (
@@ -107,22 +131,11 @@ function App() {
       {/* Note */}
       {noteState.order.length > 0 ? (
         <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId={DROPPABLE_ID} direction="horizontal" disableInteractiveElementBlocking={true}>
-            {(provided) => (
-              <NotesWrapper ref={provided.innerRef} {...provided.droppableProps}>
-                {noteState.order.map((title, index) => (
-                  <Draggable key={title} draggableId={title} index={index}>
-                    {(provided) => (
-                      <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                        <Note title={title} note={noteState.data[title]} dragHandleProps={provided.dragHandleProps} />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </NotesWrapper>
-            )}
-          </Droppable>
+          <NotesWrapper>
+            {noteState.order.map((title) => (
+              <Note key={title} title={title} note={noteState.data[title]} />
+            ))}
+          </NotesWrapper>
         </DragDropContext>
       ) : (
         "노트를 추가해주세요."

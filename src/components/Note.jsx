@@ -17,6 +17,18 @@ const NoteContainer = styled.div`
   background-color: ${(props) => props.theme.textColor};
   color: ${(props) => props.theme.backgroundColor};
 `;
+const NoteContents = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+`;
+const NoteHeader = styled.header`
+  display: flex;
+  justify-content: space-between;
+`;
+const NoteBody = styled.ul`
+  flex: 1;
+`;
 const Title = styled.h5`
   margin-bottom: 16px;
   font-size: 20px;
@@ -76,76 +88,46 @@ export default function Notes({ title, note }) {
       };
     });
   };
-  const onDeleteList = () => {
-    console.log("onDeleteList");
-  };
-  // const onDragEnd = (info) => {
-  //   console.log(info);
-  //   if (!destination) return;
-  //   //draggableId -> 처음 선택한것
-  //   //source.droppableId -> 드래그하려던 note container
-  //   //source.index -> 옮기려고하는 위치
-  //   //destination.droppableId -> 옮기려고하는 위치
-  //   const {draggableId, source, destination } = info;
-  //   setNoteState((prev) => {
-  //     const newData = {...prev.data};
-  //   })
-  // };
-  const onDragEnd = (info) => {
-    const { source, destination } = info;
-
-    console.log("source.droppableId:", source.droppableId);
-    console.log("destination.droppableId:", destination.droppableId);
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId) {
-      //same note
-      setNoteState((prev) => {
-        console.log("same");
-        const newData = { ...prev.data };
-        const items = [...newData[source.droppableId]];
-        const [movedItem] = items.splice(source.index, 1);
-        items.splice(destination.index, 0, movedItem);
-        newData[source.droppableId] = items;
-        return {
-          ...prev,
-          data: newData,
-        };
-      });
-    } else {
-      console.log("other");
-    }
+  const onDeleteList = (index) => {
+    setNoteState((prev) => {
+      const newList = [...prev.data[title]];
+      newList.splice(index, 1);
+      return {
+        ...prev,
+        data: { ...prev.data, [title]: newList },
+      };
+    });
   };
 
   return (
-    // {...dragHandleProps}
     <NoteContainer>
-      <div>
-        <Title>📒 {title}</Title>
-        <DeleteButton onClick={onDeleteNote}>❌</DeleteButton>
+      <NoteContents>
+        <NoteHeader>
+          <Title>📒 {title}</Title>
+          <DeleteButton onClick={onDeleteNote}>❌</DeleteButton>
+        </NoteHeader>
         {note.length > 0 && (
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId={title}>
-              {(provided) => (
-                <ul ref={provided.innerRef} {...provided.droppableProps}>
-                  {note.map((list, index) => (
-                    <Draggable key={list} draggableId={list} index={index}>
-                      {(provided) => (
-                        <NoteItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                          <span>
-                            {index + 1}. {list}
-                          </span>
-                          <DeleteButton onClick={onDeleteList}>❌</DeleteButton>
-                        </NoteItem>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <Droppable droppableId={title}>
+            {(provided) => (
+              <NoteBody ref={provided.innerRef} {...provided.droppableProps}>
+                {note.map((list, index) => (
+                  <Draggable key={list} draggableId={`${list}`} index={index}>
+                    {(provided) => (
+                      <NoteItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                        <span>
+                          {index + 1}. {list}
+                        </span>
+                        <DeleteButton onClick={() => onDeleteList(index)}>❌</DeleteButton>
+                      </NoteItem>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </NoteBody>
+            )}
+          </Droppable>
         )}
-      </div>
+      </NoteContents>
       {/* add list */}
       <ListAddContainer>
         <form onSubmit={handleSubmit(createList)}>
