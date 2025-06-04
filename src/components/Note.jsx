@@ -1,9 +1,10 @@
 import React from "react";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useSetRecoilState } from "recoil";
 import { NoteState } from "../atoms/atom";
 import { styled } from "styled-components";
 import { useForm } from "react-hook-form";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { Draggable, Droppable } from "react-beautiful-dnd";
+import { Input, FormCreate, Button, ErrorText, BasicButton } from "../styled/commonStyle";
 
 const NoteContainer = styled.div`
   position: relative;
@@ -35,20 +36,21 @@ const Title = styled.h5`
   line-height: 1.4;
   font-weight: 700;
 `;
-const DeleteButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
+const BtnGroup = styled.div`
+  display: flex;
+  gap: 4px;
 `;
 const NoteItem = styled.li`
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 4px;
-  font-size: 16px;
-  & ${DeleteButton} {
+  background-color: ${(props) => (props.$isDragging ? "#0ca7fa" : "transparent")};
+  color: ${(props) => (props.$isDragging ? "#fff" : "#000")};
+  font-weight: ${(props) => (props.$isDragging ? 700 : 400)};
+  font-size: ${(props) => (props.$isDragging ? "20px" : "16px")};
+  border-radius: 4px;
+  & ${BasicButton} {
     position: static;
     border-radius: 50%;
     width: 24px;
@@ -63,10 +65,22 @@ const ListAddContainer = styled.div`
 `;
 export default function Notes({ title, note }) {
   const setNoteState = useSetRecoilState(NoteState);
-  const { register, handleSubmit, setValue } = useForm();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    setError,
+    formState: { errors },
+  } = useForm();
   const createList = (data) => {
     const newList = data.NewList.trim();
-    if (!newList) return;
+    if (!newList) {
+      setError("NewList", {
+        type: "error",
+        message: `텍스트를 입력해주세요.`,
+      });
+      return;
+    }
     setNoteState((prev) => {
       const newData = { ...prev.data };
       newData[title] = [...newData[title], newList];
@@ -88,6 +102,26 @@ export default function Notes({ title, note }) {
       };
     });
   };
+  const onEditNote = (title) => {
+    const newName = window.prompt(`${title} 보드의 새 이름을 입력해주세요.`, title)?.trim();
+    if (!newName || newName === title) return;
+    setNoteState((prev) => {
+      const newData = { ...prev.data };
+      const newOrder = [...prev.order];
+      newData[newName] = newData[title];
+      delete newData[title];
+
+      const index = newOrder.indexOf(title);
+      if (index !== -1) {
+        newOrder[index] = newName;
+      }
+      return {
+        data: newData,
+        order: newOrder,
+      };
+    });
+  };
+
   const onDeleteList = (index) => {
     setNoteState((prev) => {
       const newList = [...prev.data[title]];
@@ -98,42 +132,64 @@ export default function Notes({ title, note }) {
       };
     });
   };
+  const onEditNoteItem = (index, text) => {
+    const newItemName = window.prompt("새로운 텍스트를 입력해주세요.", text)?.trim();
+    if (newItemName) {
+      setNoteState((prev) => {
+        const newData = { ...prev.data };
+        const updatedList = [...newData[title]];
+        updatedList[index] = newItemName;
+        newData[title] = updatedList;
+
+        return {
+          ...prev,
+          data: newData,
+        };
+      });
+    }
+  };
 
   return (
     <NoteContainer>
       <NoteContents>
         <NoteHeader>
           <Title>📒 {title}</Title>
-          <DeleteButton onClick={onDeleteNote}>❌</DeleteButton>
+          <BtnGroup>
+            <BasicButton onClick={() => onEditNote(title)}>@</BasicButton>
+            <BasicButton onClick={onDeleteNote}>❌</BasicButton>
+          </BtnGroup>
         </NoteHeader>
-        {note.length > 0 && (
-          <Droppable droppableId={title}>
-            {(provided) => (
-              <NoteBody ref={provided.innerRef} {...provided.droppableProps}>
-                {note.map((list, index) => (
-                  <Draggable key={list} draggableId={`${list}`} index={index}>
-                    {(provided) => (
-                      <NoteItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                        <span>
-                          {index + 1}. {list}
-                        </span>
-                        <DeleteButton onClick={() => onDeleteList(index)}>❌</DeleteButton>
-                      </NoteItem>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </NoteBody>
-            )}
-          </Droppable>
-        )}
+        <Droppable droppableId={title}>
+          {(provided) => (
+            <NoteBody ref={provided.innerRef} {...provided.droppableProps}>
+              {note.map((list, index) => (
+                <Draggable key={list} draggableId={`${list}`} index={index}>
+                  {(provided, snapshot) => (
+                    <NoteItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} $isDragging={snapshot.isDragging}>
+                      <span>
+                        {index + 1}. {list}
+                      </span>
+                      <BtnGroup>
+                        <BasicButton onClick={() => onEditNoteItem(index, list)}>@</BasicButton>
+                        <BasicButton onClick={() => onDeleteList(index)}>❌</BasicButton>
+                      </BtnGroup>
+                    </NoteItem>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </NoteBody>
+          )}
+        </Droppable>
       </NoteContents>
       {/* add list */}
       <ListAddContainer>
-        <form onSubmit={handleSubmit(createList)}>
-          <input type="text" placeholder="리스트 추가" {...register("NewList")} />
-          <button>⬆️</button>
-        </form>
+        <FormCreate onSubmit={handleSubmit(createList)}>
+          <Input placeholder="리스트 추가" {...register("NewList")} $height="20px" />
+          <Button>⬆️</Button>
+        </FormCreate>
+        {/* Error */}
+        {errors.NewList && <ErrorText $margin="6px 0 0">{errors.NewList.message}</ErrorText>}
       </ListAddContainer>
     </NoteContainer>
   );

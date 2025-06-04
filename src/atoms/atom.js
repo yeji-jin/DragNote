@@ -7,18 +7,12 @@ export const themeState = atom({
 
 const getNoteState = () => {
   const initialValue = {
-    order: ["a", "b", "c"],
+    order: ["do", "doing", "done"],
     data: {
       a: ["a", "b", "c"],
       b: [],
       c: [],
     },
-    // @
-    // noteState = [
-    //   { id: "a", items: [...] },
-    //   { id: "b", items: [...] },
-    //   { id: "c", items: [...] },
-    // ];
   };
   try {
     const savedNote = localStorage.getItem("noteState");
