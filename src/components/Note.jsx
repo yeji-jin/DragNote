@@ -5,6 +5,10 @@ import { styled } from "styled-components";
 import { useForm } from "react-hook-form";
 import { Draggable, Droppable } from "react-beautiful-dnd";
 import { Input, FormCreate, Button, ErrorText, BasicButton } from "../styled/commonStyle";
+import { FaPen } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
+import { FaDeleteLeft } from "react-icons/fa6";
+import { IoMdAddCircle } from "react-icons/io";
 
 const NoteContainer = styled.div`
   position: relative;
@@ -26,8 +30,11 @@ const NoteContents = styled.div`
 const NoteHeader = styled.header`
   display: flex;
   justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
 `;
 const NoteBody = styled.ul`
+  margin-top: 20px;
   flex: 1;
 `;
 const Title = styled.h5`
@@ -55,7 +62,6 @@ const NoteItem = styled.li`
     border-radius: 50%;
     width: 24px;
     height: 24px;
-    font-size: 8px;
     border: none;
   }
 `;
@@ -91,7 +97,7 @@ export default function Notes({ title, note }) {
     });
     setValue("NewList", "");
   };
-  const onDeleteNote = () => {
+  const deleteNote = () => {
     setNoteState((prev) => {
       const newData = { ...prev.data };
       delete newData[title];
@@ -102,7 +108,7 @@ export default function Notes({ title, note }) {
       };
     });
   };
-  const onEditNote = (title) => {
+  const renameNote = (title) => {
     const newName = window.prompt(`${title} 보드의 새 이름을 입력해주세요.`, title)?.trim();
     if (!newName || newName === title) return;
     setNoteState((prev) => {
@@ -122,7 +128,7 @@ export default function Notes({ title, note }) {
     });
   };
 
-  const onDeleteList = (index) => {
+  const deleteNoteItem = (index) => {
     setNoteState((prev) => {
       const newList = [...prev.data[title]];
       newList.splice(index, 1);
@@ -132,8 +138,8 @@ export default function Notes({ title, note }) {
       };
     });
   };
-  const onEditNoteItem = (index, text) => {
-    const newItemName = window.prompt("새로운 텍스트를 입력해주세요.", text)?.trim();
+  const renameNoteItem = (index, text) => {
+    const newItemName = window.prompt(`${text}의 새 이름을 입력해주세요`, text)?.trim();
     if (newItemName) {
       setNoteState((prev) => {
         const newData = { ...prev.data };
@@ -155,8 +161,12 @@ export default function Notes({ title, note }) {
         <NoteHeader>
           <Title>📒 {title}</Title>
           <BtnGroup>
-            <BasicButton onClick={() => onEditNote(title)}>@</BasicButton>
-            <BasicButton onClick={onDeleteNote}>❌</BasicButton>
+            <BasicButton onClick={() => renameNote(title)}>
+              <FaPen />
+            </BasicButton>
+            <BasicButton onClick={deleteNote}>
+              <MdDelete />
+            </BasicButton>
           </BtnGroup>
         </NoteHeader>
         <Droppable droppableId={title}>
@@ -170,8 +180,12 @@ export default function Notes({ title, note }) {
                         {index + 1}. {list}
                       </span>
                       <BtnGroup>
-                        <BasicButton onClick={() => onEditNoteItem(index, list)}>@</BasicButton>
-                        <BasicButton onClick={() => onDeleteList(index)}>❌</BasicButton>
+                        <BasicButton onClick={() => renameNoteItem(index, list)}>
+                          <FaPen />
+                        </BasicButton>
+                        <BasicButton onClick={() => deleteNoteItem(index)}>
+                          <FaDeleteLeft color="#ff3232" />
+                        </BasicButton>
                       </BtnGroup>
                     </NoteItem>
                   )}
@@ -185,8 +199,10 @@ export default function Notes({ title, note }) {
       {/* add list */}
       <ListAddContainer>
         <FormCreate onSubmit={handleSubmit(createList)}>
-          <Input placeholder="리스트 추가" {...register("NewList")} $height="20px" />
-          <Button>⬆️</Button>
+          <Input placeholder="리스트 추가" {...register("NewList")} $height="14px" />
+          <BasicButton>
+            <IoMdAddCircle />
+          </BasicButton>
         </FormCreate>
         {/* Error */}
         {errors.NewList && <ErrorText $margin="6px 0 0">{errors.NewList.message}</ErrorText>}

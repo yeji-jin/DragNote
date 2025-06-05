@@ -12,9 +12,10 @@ export const BasicButton = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: ${(props) => (props.$rounded ? "50%" : 0)};
+  width: 32px;
+  height: 32px;
+  border-radius: ${(props) => (props.$rounded ? "50%" : "4px")};
+  border: 1px solid #beb7b7;
 `;
 export const ErrorText = styled.p`
   margin: ${(props) => props.$margin || 0};
