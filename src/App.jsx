@@ -3,11 +3,10 @@ import { useRecoilState } from "recoil";
 import { styled } from "styled-components";
 import { NoteState } from "./atoms/atom";
 import Note from "./components/Note";
-import { DragDropContext } from "react-beautiful-dnd";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import useSaveToLocalStorage from "./hooks/useSaveToLocalStorage";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Input, FormCreate, Button, ErrorText } from "./styled/commonStyle";
-
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -25,9 +24,39 @@ const NotesWrapper = styled.section`
   margin-top: 60px;
   width: 100%;
 `;
+const TrashWrapper = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  z-index: 10;
+`;
+const TrashContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  transition: transform 0.15s ease-in;
+  transform: ${(props) => (props.$isVisible ? "translateY(0)" : "translateY(100%)")};
+  background: ${(props) => (props.$isDraggingOver ? "#ff1a6a" : "#12b8ff")};
+  p {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: 700;
+    color: ${(props) => props.theme.textColor};
+  }
+`;
+const TRASH_ID = "TRASH";
 function App() {
   const [noteState, setNoteState] = useRecoilState(NoteState);
-  console.log(noteState);
+  const [trashVisible, setTrashVisible] = useState(false);
   const saveNoteState = useSaveToLocalStorage("noteState");
   const {
     register,
@@ -63,13 +92,32 @@ function App() {
     });
     setValue("NewNote", ""); //reset
   };
+  const onDragStart = () => {
+    setTrashVisible(true);
+  };
   const onDragEnd = (info) => {
     const { source, destination } = info;
     //draggableId -> 처음 선택한것
     //source.droppableId -> 드래그하던 note container
     //source.index -> 옮기려고하는 위치
     //destination.droppableId -> 옮기려고하는 위치
-    if (!destination) return;
+    if (!destination) {
+      setTrashVisible(false);
+      return;
+    }
+    if (destination.droppableId === TRASH_ID) {
+      setNoteState((prev) => {
+        const newData = { ...prev.data };
+        const copy = [...newData[source.droppableId]];
+        copy.splice(source.index, 1);
+        newData[source.droppableId] = copy;
+        return {
+          ...prev,
+          data: newData,
+        };
+      });
+      return;
+    }
     if (source.droppableId === destination.droppableId) {
       //only same note
       setNoteState((prev) => {
@@ -99,6 +147,7 @@ function App() {
         };
       });
     }
+    setTrashVisible(false);
   };
 
   return (
@@ -112,12 +161,23 @@ function App() {
       {errors.NewNote && <ErrorText>{errors.NewNote.message}</ErrorText>}
       {/* Note */}
       {noteState.order.length > 0 ? (
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <NotesWrapper>
             {noteState.order.map((title) => (
               <Note key={title} title={title} note={noteState.data[title]} />
             ))}
           </NotesWrapper>
+          {/* trash */}
+          <TrashWrapper>
+            <Droppable droppableId={TRASH_ID}>
+              {(provided, snapshot) => (
+                <TrashContainer ref={provided.innerRef} {...provided.droppableProps} $isVisible={trashVisible} $isDraggingOver={snapshot.isDraggingOver}>
+                  <p>이곳에 드래그하면 아이템이 삭제됩니다</p>
+                  {provided.placeholder}
+                </TrashContainer>
+              )}
+            </Droppable>
+          </TrashWrapper>
         </DragDropContext>
       ) : (
         "노트를 추가해주세요."
