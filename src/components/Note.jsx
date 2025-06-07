@@ -53,7 +53,7 @@ const NoteItem = styled.li`
   justify-content: space-between;
   padding: 8px 4px;
   background-color: ${(props) => (props.$isDragging ? "#0ca7fa" : "transparent")};
-  color: ${(props) => (props.$isDragging ? "#fff" : "#000")};
+  color: ${(props) => (props.$isDragging ? "#fff" : props.theme.backgroundColor)};
   font-weight: ${(props) => (props.$isDragging ? 700 : 400)};
   font-size: ${(props) => (props.$isDragging ? "20px" : "16px")};
   border-radius: 4px;
