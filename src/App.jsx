@@ -6,7 +6,7 @@ import { useRecoilState } from "recoil";
 import { styled, keyframes } from "styled-components";
 import { NoteState } from "./atoms/atom";
 import Note from "./components/Note";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import useSaveToLocalStorage from "./hooks/useSaveToLocalStorage";
 import { useEffect, useState } from "react";
 import { Input, FormCreate, Button, ErrorText } from "./styled/commonStyle";
@@ -23,7 +23,7 @@ const Wrapper = styled.div`
   min-height: 100vh;
 `;
 const NotesWrapper = styled.section`
-  overflow: auto;
+  /* overflow-x: auto; */
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -81,8 +81,8 @@ const ModalWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 40px;
-  background-color: ${(props) => props.theme.textColor};
-  color: ${(props) => props.theme.backgroundColor};
+  background-color: ${(props) => props.theme.backgroundColor};
+  color: ${(props) => props.theme.textColor};
   transition: transform 0.15s ease-in;
   transform: ${(props) => (props.$showPopup ? "translateX(0)" : "translateX(100%)")};
   border-left: 2px solid ${(props) => props.theme.backgroundColor};
@@ -91,7 +91,7 @@ const ModalWrapper = styled.div`
   & p:first-child {
     padding-bottom: 24px;
     font-size: 24px;
-    border-bottom: 1px solid ${(props) => props.theme.backgroundColor};
+    border-bottom: 1px solid ${(props) => props.theme.textColor};
   }
   & > button {
     position: absolute;
@@ -100,6 +100,7 @@ const ModalWrapper = styled.div`
     height: 40px;
     background: none;
     border: none;
+    color: ${(props) => props.theme.textColor};
   }
 `;
 
@@ -159,6 +160,20 @@ function App() {
       setTrashVisible(false);
       return;
     }
+    if (info.type === "NOTE_BOARD") {
+      setNoteState((prev) => {
+        const newOrder = [...prev.order];
+        const [movedBoard] = newOrder.splice(source.index, 1);
+        newOrder.splice(destination.index, 0, movedBoard);
+        return {
+          ...prev,
+          order: newOrder,
+        };
+      });
+      setTrashVisible(false);
+      return;
+    }
+
     if (destination.droppableId === TRASH_ID) {
       setNoteState((prev) => {
         const newData = { ...prev.data };
@@ -230,11 +245,18 @@ function App() {
         {/* Note */}
         {noteState.order.length > 0 ? (
           <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <NotesWrapper>
-              {noteState.order.map((title) => (
-                <Note key={title} title={title} note={noteState.data[title]} />
-              ))}
-            </NotesWrapper>
+            <Droppable droppableId="NOTE_BOARD" type="NOTE_BOARD" direction="horizontal">
+              {(provided) => (
+                <NotesWrapper ref={provided.innerRef} {...provided.droppableProps}>
+                  {noteState.order.map((title, index) => (
+                    <Draggable key={title} draggableId={title} index={index}>
+                      {(provided) => <Note title={title} note={noteState.data[title]} draggableProvided={provided} />}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </NotesWrapper>
+              )}
+            </Droppable>
             {/* trash */}
             <TrashWrapper>
               <Droppable droppableId={TRASH_ID}>

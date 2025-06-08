@@ -7,7 +7,7 @@ import { Draggable, Droppable } from "react-beautiful-dnd";
 import { Input, FormCreate, Button, ErrorText, BasicButton } from "../styled/commonStyle";
 import { FaPen } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import { FaDeleteLeft } from "react-icons/fa6";
+import { FaDeleteLeft, FaArrowsLeftRight } from "react-icons/fa6";
 import { IoMdAddCircle } from "react-icons/io";
 
 const NoteContainer = styled.div`
@@ -47,6 +47,21 @@ const BtnGroup = styled.div`
   display: flex;
   gap: 4px;
 `;
+const BtnDrag = styled.div`
+  position: absolute;
+  left: 50%;
+  top: -40px;
+  width: 100px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translateX(-50%);
+  background: ${(props) => props.theme.primary};
+  text-align: center;
+  font-weight: 700;
+  border-radius: 24px 24px 0 0;
+`;
 const NoteItem = styled.li`
   display: flex;
   align-items: center;
@@ -57,6 +72,7 @@ const NoteItem = styled.li`
   font-weight: ${(props) => (props.$isDragging ? 700 : 400)};
   font-size: ${(props) => (props.$isDragging ? "20px" : "16px")};
   border-radius: 4px;
+  user-select: none;
   & ${BasicButton} {
     position: static;
     border-radius: 50%;
@@ -69,7 +85,7 @@ const ListAddContainer = styled.div`
   padding-top: 20px;
   border-top: 1px solid ${(props) => props.theme.backgroundColor};
 `;
-export default function Notes({ title, note }) {
+export default function Notes({ title, note, draggableProvided }) {
   const setNoteState = useSetRecoilState(NoteState);
   const {
     register,
@@ -154,9 +170,8 @@ export default function Notes({ title, note }) {
       });
     }
   };
-
   return (
-    <NoteContainer>
+    <NoteContainer ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
       <NoteContents>
         <NoteHeader>
           <Title>📒 {title}</Title>
@@ -167,13 +182,17 @@ export default function Notes({ title, note }) {
             <BasicButton onClick={deleteNote}>
               <MdDelete />
             </BasicButton>
+            {/* drag */}
+            <BtnDrag {...draggableProvided.dragHandleProps}>
+              <FaArrowsLeftRight size={"26px"} />
+            </BtnDrag>
           </BtnGroup>
         </NoteHeader>
-        <Droppable droppableId={title}>
+        <Droppable droppableId={title} type="NOTE_ITEM">
           {(provided) => (
             <NoteBody ref={provided.innerRef} {...provided.droppableProps}>
               {note.map((list, index) => (
-                <Draggable key={list} draggableId={`${list}`} index={index}>
+                <Draggable key={list} draggableId={`${title}-${list}_${index}`} index={index}>
                   {(provided, snapshot) => (
                     <NoteItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} $isDragging={snapshot.isDragging}>
                       <span>
